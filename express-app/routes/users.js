@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 const sqlite3 = require('sqlite3').verbose();
 
-// Создаем и подключаем базу данных
+
 const db = new sqlite3.Database('mydb.db', (err) => {
     if (err) {
         console.error('Ошибка при подключении к БД', err);
@@ -11,13 +11,13 @@ const db = new sqlite3.Database('mydb.db', (err) => {
     }
 });
 
-// Создаем таблицу пользователей, если её нет
+
 db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT
 )`);
 
-// Получение списка пользователей
+
 router.get('/', function (req, res, next) {
     db.all("SELECT id, name FROM users", [], (err, rows) => {
         if (err) {
@@ -29,7 +29,7 @@ router.get('/', function (req, res, next) {
     });
 });
 
-// Создание нового пользователя
+
 router.post('/', function (req, res, next) {
     if (!req.body.name) {
         return res.status(400).json({ error: 'Name is required' });
