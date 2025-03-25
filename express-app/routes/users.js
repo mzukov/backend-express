@@ -1,54 +1,49 @@
 var express = require('express');
 var router = express.Router();
+const sqlite3 = require('sqlite3').verbose();
 
-/* GET users listing. */
-
-const users = {
-  items: [
-    {
-      id: 1,
-      name: "Павел Егоров"
-    },
-    {
-      id: 2,
-      name: "Арсений Шур"
-    },
-    {
-      id: 3,
-      name: "Мария Филатова"
-    },
-    {
-      id: 4,
-      name: "Олег Расин"
-    },
-    {
-      id: 5,
-      name: "Александр Логинов"
+// Создаем и подключаем базу данных
+const db = new sqlite3.Database('mydb.db', (err) => {
+    if (err) {
+        console.error('Ошибка при подключении к БД', err);
+    } else {
+        console.log('Подключено к SQLite');
     }
-  ]
-};
-
-router.get('/', function(req, res, next) {
-  res.json(users);
 });
 
-router.post('/', function(req, res, next) {
-  // Проверяем, есть ли имя пользователя в теле запроса
-  if (!req.body.name) {
-    return res.status(400).json({ error: 'Name is required' });
-  }
+// Создаем таблицу пользователей, если её нет
+db.run(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT
+)`);
 
-  // Создаем нового пользователя
-  const newUser = {
-    id: users.items.length + 1, // Просто увеличиваем ID на 1
-    name: req.body.name
-  };
+// Получение списка пользователей
+router.get('/', function (req, res, next) {
+    db.all("SELECT id, name FROM users", [], (err, rows) => {
+        if (err) {
+            console.error('Ошибка при получении пользователей', err);
+            res.status(500).json({ error: 'Ошибка сервера' });
+        } else {
+            res.json({ items: rows });
+        }
+    });
+});
 
-  // Добавляем пользователя в массив
-  users.items.push(newUser);
+// Создание нового пользователя
+router.post('/', function (req, res, next) {
+    if (!req.body.name) {
+        return res.status(400).json({ error: 'Name is required' });
+    }
 
-  // Возвращаем созданного пользователя с кодом 201 (Created)
-  res.status(201).json(newUser);
+    const insert = "INSERT INTO users (name) VALUES (?)";
+    db.run(insert, [req.body.name], function (err) {
+        if (err) {
+            console.error('Ошибка при добавлении пользователя', err);
+            return res.status(500).json({ error: 'Ошибка сервера' });
+        }
+
+        res.status(201).json({ id: this.lastID, name: req.body.name });
+    });
 });
 
 module.exports = router;
